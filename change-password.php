@@ -108,6 +108,200 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $locked    = $lockRemaining > 0;
 $cancelUrl = $isAdmin ? 'admin-dashboard.php' : 'index.php';
 
+/* Renders the form (styles + markup + script) - everything lives in this one file */
+function cp_render_form(array $errors, string $formError, bool $changed, bool $locked, string $cancelUrl)
+{
+?>
+<!-- change-password form v2 (eye toggle) -->
+<style>
+/* CR-01 / FR-23 Change Password - styles (embedded so no extra css file is needed) */
+.cp-panel{ padding: 32px 36px; }
+.details-page .details-card.cp-panel{ flex: none; width: 100%; max-width: 560px; margin: 0 auto; }
+.admin-panel.cp-panel{ max-width: 560px; }
+.cp-card{ width: 100%; }
+.cp-title{ font-size: 1.4rem; margin: 0 0 6px; }
+.cp-lede{ color: var(--ink-soft, #5b6475); font-size: .9rem; margin: 0 0 24px; }
+
+.cp-card .field{ margin-bottom: 18px; }
+.pw-input{ position: relative; }
+.pw-input input{ width: 100%; padding-right: 48px; }
+.pw-toggle{
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  width: 36px; height: 36px; padding: 0; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink-soft, #5b6475); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.pw-toggle:hover{ background: rgba(0,0,0,.06); color: var(--primary, #1f3a7a); }
+.pw-toggle:focus-visible{ outline: 2px solid var(--primary, #1f3a7a); outline-offset: 1px; }
+.pw-toggle svg{ width: 20px; height: 20px; }
+.pw-toggle .eye-off{ display: none; }
+.pw-toggle.is-visible .eye{ display: none; }
+.pw-toggle.is-visible .eye-off{ display: inline; }
+
+.pw-meter{ height: 6px; margin-top: 10px; border-radius: 100px; background: var(--line, #e3e6ec); overflow: hidden; }
+.pw-meter span{ display: block; height: 100%; width: 0; border-radius: 100px; transition: width .2s ease, background .2s ease; }
+.pw-meter.s1 span{ width: 25%;  background: #c0362c; }
+.pw-meter.s2 span{ width: 50%;  background: #d08a1f; }
+.pw-meter.s3 span{ width: 75%;  background: #5b9a3c; }
+.pw-meter.s4 span{ width: 100%; background: #2f8a4f; }
+
+.form-banner.form-banner-success{ background: #e9f4ee; border-color: #bfdcca; color: #25603f; }
+.cp-card .form-actions{ margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; }
+.cp-card .btn[disabled]{ opacity: .55; cursor: not-allowed; }
+@media (max-width: 620px){ .cp-panel{ padding: 24px 20px; } }
+</style>
+<div class="cp-card">
+  <h2 class="cp-title">Change password</h2>
+  <p class="cp-lede">Enter your current password, then choose a new one. You will stay logged in on this device.</p>
+
+  <?php if ($changed): ?>
+  <div class="form-banner form-banner-success visible" role="status">
+    <span>Your password has been changed successfully.</span>
+  </div>
+  <?php endif; ?>
+
+  <?php if ($formError): ?>
+  <div class="form-banner visible" role="alert">
+    <span><?= e($formError) ?></span>
+  </div>
+  <?php endif; ?>
+
+  <form method="post" id="changePasswordForm" novalidate>
+    <?= csrf_field() ?>
+
+    <div class="field <?= isset($errors['current']) ? 'has-error' : '' ?>">
+      <label for="currentPassword">Current password</label>
+      <div class="pw-input">
+        <input type="password" id="currentPassword" name="currentPassword" required autocomplete="current-password">
+        <button type="button" class="pw-toggle" data-target="currentPassword" data-label="current password" aria-label="Show current password" aria-pressed="false" title="Show / hide password"><svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+      </div>
+      <p class="field-error"><?= e($errors['current'] ?? 'Enter your current password.') ?></p>
+    </div>
+
+    <div class="field <?= isset($errors['new']) ? 'has-error' : '' ?>">
+      <label for="newPassword">New password</label>
+      <div class="pw-input">
+        <input type="password" id="newPassword" name="newPassword" required autocomplete="new-password" maxlength="72">
+        <button type="button" class="pw-toggle" data-target="newPassword" data-label="new password" aria-label="Show new password" aria-pressed="false" title="Show / hide password"><svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+      </div>
+      <div class="pw-meter" id="pwMeter" aria-hidden="true"><span></span></div>
+      <p class="field-hint" id="pwHint">At least 8 characters, with letters and numbers.</p>
+      <p class="field-error"><?= e($errors['new'] ?? 'Enter a valid new password.') ?></p>
+    </div>
+
+    <div class="field <?= isset($errors['confirm']) ? 'has-error' : '' ?>">
+      <label for="confirmPassword">Confirm new password</label>
+      <div class="pw-input">
+        <input type="password" id="confirmPassword" name="confirmPassword" required autocomplete="new-password" maxlength="72">
+        <button type="button" class="pw-toggle" data-target="confirmPassword" data-label="confirm password" aria-label="Show confirm password" aria-pressed="false" title="Show / hide password"><svg class="eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg></button>
+      </div>
+      <p class="field-error"><?= e($errors['confirm'] ?? 'The two passwords do not match.') ?></p>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary" <?= $locked ? 'disabled' : '' ?>>Update password</button>
+      <a href="<?= e($cancelUrl) ?>" class="btn btn-ghost">Cancel</a>
+    </div>
+  </form>
+</div>
+<script>
+/* CR-01 / FR-23 Change Password — client side helpers.
+   The server (change-password.php) repeats every check, so this file
+   only improves the experience: show/hide, strength meter, quick errors. */
+(function () {
+  "use strict";
+
+  var form = document.getElementById("changePasswordForm");
+  if (!form) return;
+
+  var current = document.getElementById("currentPassword");
+  var next    = document.getElementById("newPassword");
+  var confirm = document.getElementById("confirmPassword");
+  var meter   = document.getElementById("pwMeter");
+  var hint    = document.getElementById("pwHint");
+  var defaultHint = hint ? hint.textContent : "";
+
+  /* ---------- Show / hide (eye toggle) ---------- */
+  form.querySelectorAll(".pw-toggle").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var input = document.getElementById(btn.dataset.target);
+      var show = input.type === "password";
+      input.type = show ? "text" : "password";
+      btn.classList.toggle("is-visible", show);
+      btn.setAttribute("aria-pressed", show ? "true" : "false");
+      btn.setAttribute("aria-label", (show ? "Hide " : "Show ") + btn.dataset.label);
+      input.focus();
+    });
+  });
+
+  /* ---------- Strength meter ---------- */
+  function score(pw) {
+    var s = 0;
+    if (pw.length >= 8) s++;
+    if (pw.length >= 12) s++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+    if (/[0-9]/.test(pw) && /[A-Za-z]/.test(pw)) s++;
+    if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(4, Math.max(pw.length ? 1 : 0, s - (pw.length < 8 ? 1 : 0)));
+  }
+
+  next.addEventListener("input", function () {
+    var s = score(next.value);
+    var labels = ["", "Weak", "Fair", "Good", "Strong"];
+    meter.className = "pw-meter" + (s ? " s" + s : "");
+    hint.textContent = s ? "Strength: " + labels[s] : defaultHint;
+  });
+
+  /* ---------- Validation ---------- */
+  function setError(input, message) {
+    var field = input.closest(".field");
+    field.classList.add("has-error");
+    field.querySelector(".field-error").textContent = message;
+  }
+
+  function clearError(input) {
+    input.closest(".field").classList.remove("has-error");
+  }
+
+  [current, next, confirm].forEach(function (input) {
+    input.addEventListener("input", function () { clearError(input); });
+  });
+
+  form.addEventListener("submit", function (event) {
+    var valid = true;
+    [current, next, confirm].forEach(clearError);
+
+    if (!current.value) {
+      setError(current, "Enter your current password."); valid = false;
+    }
+
+    if (!next.value) {
+      setError(next, "Enter a new password."); valid = false;
+    } else if (next.value.length < 8) {
+      setError(next, "Password must be at least 8 characters."); valid = false;
+    } else if (!/[A-Za-z]/.test(next.value) || !/[0-9]/.test(next.value)) {
+      setError(next, "Use at least one letter and one number."); valid = false;
+    } else if (current.value && next.value === current.value) {
+      setError(next, "New password must be different from your current password."); valid = false;
+    }
+
+    if (!confirm.value) {
+      setError(confirm, "Confirm your new password."); valid = false;
+    } else if (next.value && confirm.value !== next.value) {
+      setError(confirm, "The two passwords do not match."); valid = false;
+    }
+
+    if (!valid) {
+      event.preventDefault();
+      var firstBad = form.querySelector(".field.has-error input");
+      if (firstBad) firstBad.focus();
+    }
+  });
+})();
+</script>
+<?php
+}
+
 /* ---------------- Administrator layout ---------------- */
 if ($isAdmin) {
     $pageTitle   = 'Change password';
@@ -117,15 +311,12 @@ if ($isAdmin) {
 
     require __DIR__ . '/includes/admin-header.php';
     ?>
-      <link rel="stylesheet" href="change-password.css">
-
       <section class="admin-section">
         <div class="admin-panel cp-panel">
-          <?php require __DIR__ . '/includes/change-password-form.php'; ?>
+          <?php cp_render_form($errors, $formError, $changed, $locked, $cancelUrl); ?>
         </div>
       </section>
 
-      <script src="change-password.js"></script>
     <?php
     require __DIR__ . '/includes/admin-footer.php';
     exit;
@@ -144,7 +335,6 @@ $currentUser = $_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User';
 document.documentElement.dataset.theme = localStorage.getItem('noticeTheme') || 'light';
 </script>
 <link rel="stylesheet" href="style.css">
-<link rel="stylesheet" href="change-password.css">
 </head>
 <body class="details-page">
 
@@ -174,7 +364,7 @@ document.documentElement.dataset.theme = localStorage.getItem('noticeTheme') || 
   </a>
 
   <article class="details-card cp-panel">
-    <?php require __DIR__ . '/includes/change-password-form.php'; ?>
+    <?php cp_render_form($errors, $formError, $changed, $locked, $cancelUrl); ?>
   </article>
 </div>
 
@@ -183,6 +373,5 @@ document.documentElement.dataset.theme = localStorage.getItem('noticeTheme') || 
 </footer>
 
 <script src="script.js"></script>
-<script src="change-password.js"></script>
 </body>
 </html>
