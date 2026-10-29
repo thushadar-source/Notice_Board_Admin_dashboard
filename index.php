@@ -77,6 +77,7 @@ document.documentElement.dataset.theme = localStorage.getItem('noticeTheme') || 
         <svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.5 6.5 0 0 0 9.8 9.8z"/></svg>
       </button>
       <span class="btn btn-text"><?= e($_SESSION['full_name'] ?? $_SESSION['username'] ?? 'User') ?></span>
+      <a href="change-password.php" class="btn btn-text">Change password</a>
       <form method="post" action="logout.php" class="header-logout-form">
         <?= csrf_field() ?>
         <button type="submit" class="btn btn-primary">Log out</button>

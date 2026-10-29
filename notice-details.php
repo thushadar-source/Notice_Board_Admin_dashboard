@@ -53,6 +53,7 @@ document.documentElement.dataset.theme = localStorage.getItem('noticeTheme') || 
 <header class="site-header details-site-header">
   <div class="header-actions details-header-actions details-header-meta">
     <span class="btn btn-text"><?= e($currentUser) ?></span>
+    <a href="change-password.php" class="btn btn-text">Change password</a>
     <span class="btn btn-text"><?= e($currentDate) ?></span>
   </div>
   <a href="index.php" class="brand">
