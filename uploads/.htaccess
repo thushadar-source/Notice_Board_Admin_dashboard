@@ -1,0 +1,6 @@
+# Stored attachments must never be executed as scripts
+php_flag engine off
+Options -Indexes
+<FilesMatch "\.(php|phtml|phar|cgi|pl)$">
+  Require all denied
+</FilesMatch>

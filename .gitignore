@@ -1,0 +1,18 @@
+# Local runtime/session files
+sessions/
+*.log
+
+# Uploaded runtime files
+uploads/*
+!uploads/index.html
+!uploads/.htaccess
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local environment overrides
+.env
+config.local.php
