@@ -4,15 +4,79 @@
    Database connection + shared helpers
    ============================================================ */
 
+/* ---------- Environment loader & helpers ---------- */
+if (!function_exists('load_env')) {
+    function load_env($path)
+    {
+        if (!file_exists($path) || !is_readable($path)) {
+            return;
+        }
+
+        $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || strpos($line, '#') === 0) {
+                continue;
+            }
+
+            if (strpos($line, '=') !== false) {
+                list($name, $value) = explode('=', $line, 2);
+                $name = trim($name);
+                $value = trim($value);
+
+                // Strip quotes if wrapped
+                if ((strlen($value) >= 2) && (
+                    ($value[0] === '"' && substr($value, -1) === '"') ||
+                    ($value[0] === "'" && substr($value, -1) === "'")
+                )) {
+                    $value = substr($value, 1, -1);
+                }
+
+                if (!array_key_exists($name, $_SERVER) && !array_key_exists($name, $_ENV)) {
+                    putenv("{$name}={$value}");
+                    $_ENV[$name] = $value;
+                    $_SERVER[$name] = $value;
+                }
+            }
+        }
+    }
+}
+
+if (!function_exists('env')) {
+    function env($key, $default = null)
+    {
+        $val = getenv($key);
+        if ($val === false) {
+            $val = $_ENV[$key] ?? $_SERVER[$key] ?? null;
+        }
+        if ($val === null || $val === false) {
+            return $default;
+        }
+
+        $lower = strtolower($val);
+        if ($lower === 'true' || $lower === '(true)') return true;
+        if ($lower === 'false' || $lower === '(false)') return false;
+        if ($lower === 'null' || $lower === '(null)') return null;
+        if ($lower === 'empty' || $lower === '(empty)') return '';
+
+        return $val;
+    }
+}
+
+// Load local .env if present
+load_env(__DIR__ . '/.env');
+
 /* ---------- XAMPP / MySQL settings ---------- */
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'notice_board');
-define('DB_USER', 'root');
-define('DB_PASS', '');          // default XAMPP password is empty
+define('DB_HOST', env('DB_HOST', 'localhost'));
+define('DB_PORT', env('DB_PORT', '3306'));
+define('DB_NAME', env('DB_NAME', 'notice_board'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
 
 /* ---------- Upload settings (NFR-04) ---------- */
+$maxUploadMb = (int)env('MAX_UPLOAD_SIZE_MB', 5);
 define('UPLOAD_DIR', __DIR__ . '/uploads/');
-define('MAX_UPLOAD_SIZE', 5 * 1024 * 1024);              // 5 MB
+define('MAX_UPLOAD_SIZE', ($maxUploadMb > 0 ? $maxUploadMb : 5) * 1024 * 1024);
 define('ALLOWED_TYPES', ['application/pdf', 'image/png', 'image/jpeg']);
 define('ALLOWED_EXT',   ['pdf', 'png', 'jpg', 'jpeg']);
 
@@ -30,8 +94,9 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /* ---------- PDO connection ---------- */
 try {
+    $dsn = 'mysql:host=' . DB_HOST . ';port=' . DB_PORT . ';dbname=' . DB_NAME . ';charset=utf8mb4';
     $pdo = new PDO(
-        'mysql:host=' . DB_HOST . ';dbname=' . DB_NAME . ';charset=utf8mb4',
+        $dsn,
         DB_USER,
         DB_PASS,
         [
@@ -41,7 +106,7 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    die('Database connection failed. Please import database/notice_board.sql and check config.php. (' . $e->getMessage() . ')');
+    die('Database connection failed. Please import database/notice_board.sql and check .env or config.php. (' . $e->getMessage() . ')');
 }
 
 /* ============================================================
