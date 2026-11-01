@@ -254,6 +254,42 @@ function initCustomSelects(){
   });
 }
 
+
+/* ---------------- Notice form scheduling preview ---------------- */
+function initNoticeSchedulingHelper() {
+  const pubInput = document.getElementById("publish_date");
+  const statusSelect = document.getElementById("status");
+  const hint = document.getElementById("scheduleNoticeIndicator");
+  const dateSpan = document.getElementById("scheduledDateText");
+  const submitBtn = document.getElementById("submitNoticeBtn");
+
+  if (!pubInput || !statusSelect || !hint) return;
+
+  function update() {
+    const pubVal = pubInput.value;
+    const statusVal = statusSelect.value;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+    if (statusVal === "published" && pubVal && pubVal > todayStr) {
+      if (dateSpan) {
+        const parts = pubVal.split("-");
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
+        dateSpan.textContent = d.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+      }
+      hint.style.display = "flex";
+      if (submitBtn) submitBtn.textContent = "Schedule notice";
+    } else {
+      hint.style.display = "none";
+      if (submitBtn) submitBtn.textContent = "Save notice";
+    }
+  }
+
+  pubInput.addEventListener("change", update);
+  statusSelect.addEventListener("change", update);
+  update();
+}
+
 /* ---------------- Boot ---------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -263,6 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
   initUploadPreview();
   initFilterForm();
   initCustomSelects();
+  initNoticeSchedulingHelper();
   showToast(document.body.dataset.flash || "");
 
   const printBtn = document.getElementById("printReport");

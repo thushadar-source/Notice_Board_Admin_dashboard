@@ -2220,3 +2220,44 @@ html[data-theme="dark"] .theme-icon-moon{ display: block; }
     font-weight: 600;
     white-space: nowrap;
 }
+
+/* CR-03 Notice scheduling badge, indicators and tone styling */
+.badge-scheduled {
+    background: #e0f2fe;
+    color: #0369a1;
+    border: 1px solid #bae6fd;
+}
+
+.tone-blue {
+    background: #f0f9ff;
+    border-color: #bae6fd;
+}
+.tone-blue .stat-val {
+    color: #0284c7;
+}
+
+.schedule-notice-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 14px;
+    background: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: 8px;
+    color: #0369a1;
+    font-size: 0.84rem;
+    margin-top: 10px;
+    line-height: 1.4;
+}
+.schedule-notice-indicator svg {
+    flex-shrink: 0;
+    color: #0284c7;
+}
+
+.scheduled-countdown {
+    display: block;
+    font-size: 0.72rem;
+    color: #0284c7;
+    margin-top: 3px;
+    font-weight: 600;
+}

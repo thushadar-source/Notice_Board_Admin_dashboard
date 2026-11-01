@@ -7,7 +7,8 @@ $today = date('Y-m-d');
 
 /* ---------- Notices by status ---------- */
 $statusCounts = [
-    'published'   => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND expiry_date >= '$today'")->fetchColumn(),
+    'published'   => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND publish_date <= '$today' AND expiry_date >= '$today'")->fetchColumn(),
+    'scheduled'   => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND publish_date > '$today'")->fetchColumn(),
     'unpublished' => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'unpublished'")->fetchColumn(),
     'draft'       => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'draft'")->fetchColumn(),
     'expired'     => (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND expiry_date < '$today'")->fetchColumn(),

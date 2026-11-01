@@ -26,9 +26,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $new = $notice['status'] === 'published' ? 'unpublished' : 'published';
             $pdo->prepare('UPDATE notices SET status = ? WHERE notice_id = ?')
                 ->execute([$new, $id]);
-            set_flash($new === 'published'
-                ? 'Notice published - it is now visible to users.'
-                : 'Notice unpublished - it is hidden from users.');
+            if ($new === 'published') {
+                $msg = ($notice['publish_date'] > date('Y-m-d'))
+                    ? 'Notice scheduled - it will automatically publish on ' . format_date($notice['publish_date']) . '.'
+                    : 'Notice published - it is now visible to users.';
+            } else {
+                $msg = 'Notice unpublished - it is hidden from users.';
+            }
+            set_flash($msg);
 
         } elseif ($action === 'delete') {                         // FR-09, AC-04
             /* Remove the stored attachment file as well */
@@ -80,8 +85,11 @@ if ($category !== 'all') {                                        // FR-16
 if ($status === 'expired') {
     $sql .= " AND n.status = 'published' AND n.expiry_date < :today";
     $params[':today'] = $today;
+} elseif ($status === 'scheduled') {
+    $sql .= " AND n.status = 'published' AND n.publish_date > :today";
+    $params[':today'] = $today;
 } elseif ($status === 'published') {
-    $sql .= " AND n.status = 'published' AND n.expiry_date >= :today";
+    $sql .= " AND n.status = 'published' AND n.publish_date <= :today AND n.expiry_date >= :today";
     $params[':today'] = $today;
 } elseif ($status !== 'all') {
     $sql .= ' AND n.status = :status';
@@ -137,10 +145,10 @@ require __DIR__ . '/includes/admin-header.php';
             <div class="admin-custom-select" data-custom-select>
               <input type="hidden" name="status" value="<?= e($status) ?>">
               <button type="button" class="admin-select-trigger" aria-haspopup="listbox" aria-expanded="false">
-                <span><?= e(['all' => 'All statuses', 'published' => 'Published', 'unpublished' => 'Unpublished', 'draft' => 'Draft', 'expired' => 'Expired'][$status] ?? 'All statuses') ?></span>
+                <span><?= e(['all' => 'All statuses', 'published' => 'Published', 'scheduled' => 'Scheduled', 'unpublished' => 'Unpublished', 'draft' => 'Draft', 'expired' => 'Expired'][$status] ?? 'All statuses') ?></span>
               </button>
               <div class="admin-select-menu" role="listbox">
-              <?php foreach (['all' => 'All statuses', 'published' => 'Published', 'unpublished' => 'Unpublished', 'draft' => 'Draft', 'expired' => 'Expired'] as $val => $label): ?>
+              <?php foreach (['all' => 'All statuses', 'published' => 'Published', 'scheduled' => 'Scheduled', 'unpublished' => 'Unpublished', 'draft' => 'Draft', 'expired' => 'Expired'] as $val => $label): ?>
                 <button type="button" role="option" data-value="<?= $val ?>" class="<?= $status === $val ? 'selected' : '' ?>"><?= $label ?></button>
               <?php endforeach; ?>
               </div>
@@ -174,7 +182,9 @@ require __DIR__ . '/includes/admin-header.php';
                 <?php endif; ?>
 
                 <?php foreach ($notices as $n):
-    $live = $n['status'] === 'published';
+    $dispStatus = display_status($n);
+    $live = ($dispStatus === 'published');
+    $isScheduled = ($dispStatus === 'scheduled');
 
     $todayDate = new DateTime(date('Y-m-d'));
     $expiryDate = new DateTime($n['expiry_date']);
@@ -196,7 +206,12 @@ require __DIR__ . '/includes/admin-header.php';
                   </td>
                   <td class="nowrap"><?= e($n['category_name']) ?></td>
                   <td><?= status_badge($n) ?></td>
-                  <td class="nowrap"><?= format_date($n['publish_date']) ?></td>
+                  <td class="nowrap">
+                    <?= format_date($n['publish_date']) ?>
+                    <?php if ($isScheduled): ?>
+                      <span class="scheduled-countdown">Scheduled</span>
+                    <?php endif; ?>
+                  </td>
                   
                  <td class="nowrap">
     <?= format_date($n['expiry_date']) ?>

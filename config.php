@@ -122,11 +122,17 @@ function check_csrf()
 
 /* ---------- Domain helpers ---------- */
 
-/** Display status: a published notice past its expiry date shows as Expired (AC-06) */
+/** Display status: a published notice with future publish date shows as Scheduled; past expiry shows as Expired */
 function display_status(array $notice)
 {
-    if ($notice['status'] === 'published' && $notice['expiry_date'] < date('Y-m-d')) {
-        return 'expired';
+    $today = date('Y-m-d');
+    if ($notice['status'] === 'published') {
+        if (!empty($notice['publish_date']) && $notice['publish_date'] > $today) {
+            return 'scheduled';
+        }
+        if (!empty($notice['expiry_date']) && $notice['expiry_date'] < $today) {
+            return 'expired';
+        }
     }
     return $notice['status'];
 }
@@ -135,6 +141,7 @@ function status_label($key)
 {
     $labels = [
         'published'   => 'Published',
+        'scheduled'   => 'Scheduled',
         'draft'       => 'Draft',
         'unpublished' => 'Unpublished',
         'expired'     => 'Expired',
