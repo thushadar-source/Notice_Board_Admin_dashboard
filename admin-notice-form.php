@@ -133,7 +133,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $values['is_pinned'], $notice['notice_id'],
             ]);
             $noticeId = $notice['notice_id'];
-            $message  = 'Notice updated successfully.';
+            if ($values['status'] === 'published' && $values['publish_date'] > date('Y-m-d')) {
+                $message = 'Notice updated and scheduled for ' . format_date($values['publish_date']) . '.';
+            } else {
+                $message = 'Notice updated successfully.';
+            }
         } else {                                                  // FR-07 Add
             $pdo->prepare(
                 'INSERT INTO notices
@@ -145,9 +149,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $values['is_pinned'], $_SESSION['user_id'],
             ]);
             $noticeId = (int)$pdo->lastInsertId();
-            $message  = $values['status'] === 'draft'
-                ? 'Notice saved as a draft.'
-                : 'Notice saved successfully.';
+            if ($values['status'] === 'draft') {
+                $message = 'Notice saved as a draft.';
+            } elseif ($values['status'] === 'published' && $values['publish_date'] > date('Y-m-d')) {
+                $message = 'Notice scheduled successfully - will go live on ' . format_date($values['publish_date']) . '.';
+            } else {
+                $message = 'Notice saved successfully.';
+            }
         }
 
         /* Remove the existing attachment if asked */
@@ -296,6 +304,10 @@ require __DIR__ . '/includes/admin-header.php';
             <div class="field <?= isset($errors['publish_date']) ? 'has-error' : '' ?>">
               <label for="publish_date">Publication date</label>
               <input type="date" id="publish_date" name="publish_date" value="<?= e($values['publish_date']) ?>">
+              <div class="schedule-notice-indicator" id="scheduleNoticeIndicator" style="display:none;">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span>Notice set for future date &mdash; will be <strong>Scheduled</strong> for <span id="scheduledDateText"></span>.</span>
+              </div>
               <p class="field-error"><?= e($errors['publish_date'] ?? '') ?></p>
             </div>
 
@@ -315,7 +327,7 @@ require __DIR__ . '/includes/admin-header.php';
             </label>
 
             <div class="form-actions">
-              <button type="submit" class="btn btn-primary btn-block">Save notice</button>
+              <button type="submit" id="submitNoticeBtn" class="btn btn-primary btn-block">Save notice</button>
               <button type="submit" name="save_draft" value="1" class="btn btn-ghost btn-block">Save as draft</button>
               <button type="button" class="btn btn-text btn-block"
                       data-confirm="Any unsaved changes to this notice will be lost."
