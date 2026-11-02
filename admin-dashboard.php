@@ -7,7 +7,8 @@ $today = date('Y-m-d');
 
 /* ---------- Counts ---------- */
 $total     = (int)$pdo->query('SELECT COUNT(*) FROM notices')->fetchColumn();
-$published = (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND expiry_date >= '$today'")->fetchColumn();
+$published = (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND publish_date <= '$today' AND expiry_date >= '$today'")->fetchColumn();
+$scheduled = (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND publish_date > '$today'")->fetchColumn();
 $expired   = (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'published' AND expiry_date < '$today'")->fetchColumn();
 $drafts    = (int)$pdo->query("SELECT COUNT(*) FROM notices WHERE status = 'draft'")->fetchColumn();
 $pinned    = (int)$pdo->query('SELECT COUNT(*) FROM notices WHERE is_pinned = 1')->fetchColumn();
@@ -39,6 +40,7 @@ $iconPin = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-wi
 $stats = [
     ['value' => $total,     'label' => 'Total notices',    'tone' => '',           'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="7" y1="16" x2="13" y2="16"/></svg>'],
     ['value' => $published, 'label' => 'Published & live', 'tone' => 'tone-green', 'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 1 1-5.9-9.1"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'],
+    ['value' => $scheduled, 'label' => 'Scheduled notices','tone' => 'tone-blue',  'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'],
     ['value' => $pinned,    'label' => 'Pinned notices',   'tone' => 'tone-pin',   'icon' => $iconPin],
     ['value' => $drafts,    'label' => 'Drafts',           'tone' => '',           'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z"/></svg>'],
     ['value' => $expired,   'label' => 'Expired',          'tone' => 'tone-red',   'icon' => '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>'],
