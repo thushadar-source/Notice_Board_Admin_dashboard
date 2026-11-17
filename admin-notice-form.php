@@ -106,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!in_array($ext, ALLOWED_EXT, true) || !in_array($mime, ALLOWED_TYPES, true)) {
                 $errors['attachment'] = 'Only PDF, PNG or JPG files are accepted.';
             } elseif ($file['size'] > MAX_UPLOAD_SIZE) {
-                $errors['attachment'] = 'The attachment must be 5 MB or smaller.';
+                $errors['attachment'] = 'The attachment must be 1 MB or smaller.';
             } else {
                 $newFile = [
                     'tmp'   => $file['tmp_name'],
@@ -267,7 +267,7 @@ require __DIR__ . '/includes/admin-header.php';
               <div class="upload-box">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-7"/><polyline points="7 8 12 3 17 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
                 <p><strong>Upload a supporting file</strong></p>
-                <p class="field-hint">PDF, PNG or JPG &middot; maximum 5 MB</p>
+                <p class="field-hint">PDF, PNG or JPG &middot; maximum 1 MB</p>
                 <label for="noticeFile" class="btn btn-ghost btn-sm">Choose file</label>
                 <input type="file" id="noticeFile" name="attachment" accept=".pdf,.png,.jpg,.jpeg">
 
